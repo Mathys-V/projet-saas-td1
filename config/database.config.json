@@ -1,0 +1,11 @@
+{
+  "database": {
+    "uri": "mongodb://mongodb:27017",
+    "dbName": "saas_project_db",
+    "options": {
+      "maxPoolSize": 20,
+      "serverSelectionTimeoutMS": 5000,
+      "retryWrites": false
+    }
+  }
+}
