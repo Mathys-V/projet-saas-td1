@@ -2,11 +2,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Installation sécurisée des dépendances sans exécution de scripts arbitraires
-COPY package.json package-lock.json* ./
-RUN npm install --ignore-scripts
+# Installation sécurisée avec verrouillage strict des versions (npm ci)
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
 
-# Copie explicite des fichiers applicatifs (évite la copie récursive globale de données sensibles)
+# Copie explicite des fichiers applicatifs (évite toute copie récursive globale de données sensibles)
 COPY src ./src
 COPY config ./config
 COPY jsconfig.json next.config.js tailwind.config.js postcss.config.js ./
