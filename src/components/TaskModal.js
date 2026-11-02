@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   X,
-  Calendar,
   Tag,
   CheckSquare,
   MessageSquare,
@@ -11,8 +10,6 @@ import {
   Send,
   AlertCircle,
   Plus,
-  User,
-  Clock,
 } from 'lucide-react';
 
 const STATUS_OPTIONS = [
@@ -23,10 +20,10 @@ const STATUS_OPTIONS = [
 ];
 
 const PRIORITY_OPTIONS = [
-  { id: 'LOW', label: 'Basse', color: 'text-slate-600 bg-slate-100 border-slate-200' },
-  { id: 'MEDIUM', label: 'Moyenne', color: 'text-amber-700 bg-amber-100 border-amber-200' },
-  { id: 'HIGH', label: 'Haute', color: 'text-orange-700 bg-orange-100 border-orange-200' },
-  { id: 'CRITICAL', label: 'Critique', color: 'text-rose-700 bg-rose-100 border-rose-200' },
+  { id: 'LOW', label: 'Basse' },
+  { id: 'MEDIUM', label: 'Moyenne' },
+  { id: 'HIGH', label: 'Haute' },
+  { id: 'CRITICAL', label: 'Critique' },
 ];
 
 export default function TaskModal({
@@ -89,7 +86,7 @@ export default function TaskModal({
 
   if (!isOpen) return null;
 
-  const isEditing = Boolean(task && task._id);
+  const isEditing = Boolean(task?._id);
   const isOverdue =
     formData.dueDate &&
     new Date(formData.dueDate) < new Date(new Date().setHours(0, 0, 0, 0)) &&
@@ -98,6 +95,13 @@ export default function TaskModal({
   const completedSubtasks = formData.subtasks.filter((s) => s.completed).length;
   const totalSubtasks = formData.subtasks.length;
   const progressPercent = totalSubtasks > 0 ? Math.round((completedSubtasks / totalSubtasks) * 100) : 0;
+
+  let submitButtonText = 'Créer la tâche';
+  if (saving) {
+    submitButtonText = 'Enregistrement...';
+  } else if (isEditing) {
+    submitButtonText = 'Mettre à jour';
+  }
 
   // Gestion des tags
   const handleAddTag = () => {
@@ -120,7 +124,7 @@ export default function TaskModal({
   const handleAddSubtask = () => {
     if (!newSubtaskInput.trim()) return;
     const newSub = {
-      _id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      _id: `sub_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       title: newSubtaskInput.trim(),
       completed: false,
     };
@@ -226,10 +230,11 @@ export default function TaskModal({
           <form id="task-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Titre */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label htmlFor="task-title-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Titre de la tâche *
               </label>
               <input
+                id="task-title-input"
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -243,10 +248,11 @@ export default function TaskModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
               {/* Statut */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label htmlFor="task-status-select" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Statut
                 </label>
                 <select
+                  id="task-status-select"
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -261,10 +267,11 @@ export default function TaskModal({
 
               {/* Priorité */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label htmlFor="task-priority-select" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Priorité
                 </label>
                 <select
+                  id="task-priority-select"
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                   className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -279,10 +286,11 @@ export default function TaskModal({
 
               {/* Assignation */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label htmlFor="task-assignee-select" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Attribué à
                 </label>
                 <select
+                  id="task-assignee-select"
                   value={formData.assigneeId}
                   onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })}
                   className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -298,10 +306,11 @@ export default function TaskModal({
 
               {/* Date d'échéance */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label htmlFor="task-due-date-input" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Échéance (Deadline)
                 </label>
                 <input
+                  id="task-due-date-input"
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
@@ -314,10 +323,11 @@ export default function TaskModal({
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label htmlFor="task-description-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Description
               </label>
               <textarea
+                id="task-description-input"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
@@ -328,10 +338,10 @@ export default function TaskModal({
 
             {/* Étiquettes (Tags / Labels) */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center space-x-1.5">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center space-x-1.5">
                 <Tag className="w-3.5 h-3.5" />
                 <span>Étiquettes (Tags)</span>
-              </label>
+              </span>
               <div className="flex flex-wrap items-center gap-1.5 mb-2">
                 {formData.tags.map((tag) => (
                   <span
@@ -376,10 +386,10 @@ export default function TaskModal({
             {/* Sous-tâches (Checklist) avec Barre de progression */}
             <div className="border-t border-slate-200 pt-5">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1.5">
                   <CheckSquare className="w-3.5 h-3.5" />
                   <span>Sous-tâches (Checklist)</span>
-                </label>
+                </span>
                 {totalSubtasks > 0 && (
                   <span className="text-xs font-semibold text-slate-600">
                     {completedSubtasks}/{totalSubtasks} complétées ({progressPercent}%)
@@ -461,10 +471,10 @@ export default function TaskModal({
           {/* Fil de discussion et commentaires (visible si la tâche existe) */}
           {isEditing && (
             <div className="border-t border-slate-200 pt-5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center space-x-1.5">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center space-x-1.5">
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>Discussion & Commentaires ({comments.length})</span>
-              </label>
+              </span>
 
               {/* Liste des commentaires */}
               <div className="space-y-3 mb-4 max-h-52 overflow-y-auto pr-1">
@@ -494,7 +504,7 @@ export default function TaskModal({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      handleSendComment();
+                      void handleSendComment();
                     }
                   }}
                   placeholder="Écrire un commentaire..."
@@ -502,7 +512,7 @@ export default function TaskModal({
                 />
                 <button
                   type="button"
-                  onClick={handleSendComment}
+                  onClick={() => void handleSendComment()}
                   disabled={submittingComment || !newCommentInput.trim()}
                   className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center space-x-1 shadow-sm"
                 >
@@ -522,7 +532,7 @@ export default function TaskModal({
                 type="button"
                 onClick={() => {
                   if (confirm('Voulez-vous vraiment supprimer définitivement cette tâche ?')) {
-                    onDelete(task._id);
+                    void onDelete(task._id);
                     onClose();
                   }
                 }}
@@ -548,7 +558,7 @@ export default function TaskModal({
               disabled={saving}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Enregistrement...' : isEditing ? 'Mettre à jour' : 'Créer la tâche'}
+              {submitButtonText}
             </button>
           </div>
         </div>

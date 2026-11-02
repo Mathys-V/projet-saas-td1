@@ -59,7 +59,7 @@ export async function POST(request) {
 
       await db.collection('users').insertOne(newUser);
 
-      // 3. Optionnel : Créer un projet par défaut pour l'entreprise
+      // 3. Projet d'accueil automatique
       const defaultProjectId = new ObjectId();
       await db.collection('projects').insertOne({
         _id: defaultProjectId,
@@ -96,7 +96,9 @@ export async function POST(request) {
         updatedAt: now,
       });
 
-      const { password: _, ...safeUser } = newUser;
+      const safeUser = { ...newUser };
+      delete safeUser.password;
+
       return NextResponse.json({
         success: true,
         user: safeUser,
@@ -137,7 +139,9 @@ export async function POST(request) {
 
       await db.collection('users').insertOne(newUser);
 
-      const { password: _, ...safeUser } = newUser;
+      const safeUser = { ...newUser };
+      delete safeUser.password;
+
       return NextResponse.json({
         success: true,
         user: safeUser,

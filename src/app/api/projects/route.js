@@ -5,6 +5,27 @@ import { ObjectId } from 'mongodb';
 
 export const dynamic = 'force-dynamic';
 
+async function validateProjectMembers(db, companyId, memberIds) {
+  if (!Array.isArray(memberIds) || memberIds.length === 0) {
+    return { valid: true, formattedIds: [] };
+  }
+
+  const formattedIds = memberIds.map(toObjectId).filter(Boolean);
+  if (formattedIds.length === 0) {
+    return { valid: true, formattedIds: [] };
+  }
+
+  const count = await db.collection('users').countDocuments({
+    companyId,
+    _id: { $in: formattedIds },
+  });
+
+  return {
+    valid: count === formattedIds.length,
+    formattedIds,
+  };
+}
+
 export async function GET(request) {
   try {
     await ensureSeedData();
@@ -42,7 +63,7 @@ export async function POST(request) {
     if (!companyId) {
       return NextResponse.json({ error: 'Le companyId est obligatoire (RG-01)' }, { status: 400 });
     }
-    if (!name || !name.trim()) {
+    if (!name?.trim()) {
       return NextResponse.json({ error: 'Le nom du projet est obligatoire' }, { status: 400 });
     }
 
@@ -52,27 +73,12 @@ export async function POST(request) {
     }
 
     const { db } = await getDatabase();
+    const { valid, formattedIds } = await validateProjectMembers(db, validCompanyId, memberIds);
 
-    // RG-03 : Valider que tous les utilisateurs assignés appartiennent à la même entreprise
-    const formattedMemberIds = [];
-    if (Array.isArray(memberIds) && memberIds.length > 0) {
-      for (const mId of memberIds) {
-        const objId = toObjectId(mId);
-        if (objId) formattedMemberIds.push(objId);
-      }
-
-      if (formattedMemberIds.length > 0) {
-        const validMembersCount = await db.collection('users').countDocuments({
-          companyId: validCompanyId,
-          _id: { $in: formattedMemberIds }
-        });
-
-        if (validMembersCount !== formattedMemberIds.length) {
-          return NextResponse.json({
-            error: 'Violation RG-03 : Un utilisateur ne peut être assigné à un projet que s\'il appartient à la même entreprise.'
-          }, { status: 400 });
-        }
-      }
+    if (!valid) {
+      return NextResponse.json({
+        error: 'Violation RG-03 : Un utilisateur ne peut être assigné à un projet que s\'il appartient à la même entreprise.'
+      }, { status: 400 });
     }
 
     const now = new Date().toISOString();
@@ -80,9 +86,9 @@ export async function POST(request) {
       _id: new ObjectId(),
       companyId: validCompanyId,
       name: name.trim(),
-      description: description ? description.trim() : '',
+      description: description?.trim() || '',
       status: status || 'ACTIVE',
-      memberIds: formattedMemberIds,
+      memberIds: formattedIds,
       startDate: startDate || now,
       targetDate: targetDate || null,
       createdAt: now,

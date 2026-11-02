@@ -3,8 +3,54 @@ import { getDatabase, toObjectId } from '@/lib/mongodb';
 
 export const dynamic = 'force-dynamic';
 
-const VALID_STATUSES = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
-const VALID_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const VALID_STATUSES = new Set(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE']);
+const VALID_PRIORITIES = new Set(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']);
+
+async function verifyTaskAssignee(db, companyId, projectId, assigneeId) {
+  if (assigneeId === null || assigneeId === '') {
+    return { valid: true, value: null };
+  }
+  const validAssigneeId = toObjectId(assigneeId);
+  if (!validAssigneeId) return { valid: true, value: undefined };
+
+  const assignee = await db.collection('users').findOne({ _id: validAssigneeId, companyId });
+  if (!assignee) {
+    return { valid: false, error: 'Violation RG-04 : L\'utilisateur n\'appartient pas à la même entreprise.' };
+  }
+
+  const project = await db.collection('projects').findOne({ _id: projectId, companyId });
+  if (project?.memberIds?.length > 0) {
+    const isMember = project.memberIds.some((m) => m.toString() === validAssigneeId.toString());
+    if (!isMember) {
+      return { valid: false, error: 'Violation RG-04 : L\'utilisateur doit faire partie des membres du projet.' };
+    }
+  }
+
+  return { valid: true, value: validAssigneeId };
+}
+
+function buildTaskUpdateFields(body) {
+  const fields = { updatedAt: new Date().toISOString() };
+  if (body.title !== undefined) fields.title = body.title.trim();
+  if (body.description !== undefined) fields.description = body.description.trim();
+  if (body.status !== undefined && VALID_STATUSES.has(body.status)) fields.status = body.status;
+  if (body.priority !== undefined && VALID_PRIORITIES.has(body.priority)) fields.priority = body.priority;
+  if (body.order !== undefined) fields.order = Number(body.order);
+  if (body.dueDate !== undefined) fields.dueDate = body.dueDate;
+  if (body.tags !== undefined) {
+    fields.tags = Array.isArray(body.tags) ? body.tags.map((t) => String(t).trim()).filter(Boolean) : [];
+  }
+  if (body.subtasks !== undefined) {
+    fields.subtasks = Array.isArray(body.subtasks)
+      ? body.subtasks.map((st, i) => ({
+          _id: st._id || `sub_${Date.now()}_${i}`,
+          title: st.title || '',
+          completed: Boolean(st.completed),
+        }))
+      : [];
+  }
+  return fields;
+}
 
 export async function GET(request, { params }) {
   try {
@@ -44,22 +90,9 @@ export async function PUT(request, { params }) {
     }
 
     const body = await request.json();
-    const {
-      companyId,
-      title,
-      description,
-      status,
-      priority,
-      assigneeId,
-      order,
-      dueDate,
-      tags,
-      subtasks,
-    } = body;
-
     const filter = { _id: taskId };
-    if (companyId) {
-      const validCompanyId = toObjectId(companyId);
+    if (body.companyId) {
+      const validCompanyId = toObjectId(body.companyId);
       if (validCompanyId) filter.companyId = validCompanyId;
     }
 
@@ -69,74 +102,27 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Tâche introuvable ou accès refusé' }, { status: 404 });
     }
 
-    const updateFields = {
-      updatedAt: new Date().toISOString(),
-    };
+    if (body.status !== undefined && !VALID_STATUSES.has(body.status)) {
+      return NextResponse.json({ error: 'Statut invalide' }, { status: 400 });
+    }
+    if (body.priority !== undefined && !VALID_PRIORITIES.has(body.priority)) {
+      return NextResponse.json({ error: 'Priorité invalide' }, { status: 400 });
+    }
 
-    if (title !== undefined) updateFields.title = title.trim();
-    if (description !== undefined) updateFields.description = description.trim();
-    if (status !== undefined) {
-      if (!VALID_STATUSES.includes(status)) {
-        return NextResponse.json({ error: `Statut invalide. Attendu: ${VALID_STATUSES.join(', ')}` }, { status: 400 });
+    const updateFields = buildTaskUpdateFields(body);
+
+    if (body.assigneeId !== undefined) {
+      const assigneeCheck = await verifyTaskAssignee(
+        db,
+        existingTask.companyId,
+        existingTask.projectId,
+        body.assigneeId
+      );
+      if (!assigneeCheck.valid) {
+        return NextResponse.json({ error: assigneeCheck.error }, { status: 400 });
       }
-      updateFields.status = status;
-    }
-    if (priority !== undefined) {
-      if (!VALID_PRIORITIES.includes(priority)) {
-        return NextResponse.json({ error: `Priorité invalide. Attendue: ${VALID_PRIORITIES.join(', ')}` }, { status: 400 });
-      }
-      updateFields.priority = priority;
-    }
-    if (order !== undefined) updateFields.order = Number(order);
-    if (dueDate !== undefined) updateFields.dueDate = dueDate;
-    if (tags !== undefined) {
-      updateFields.tags = Array.isArray(tags) ? tags.map((t) => String(t).trim()).filter(Boolean) : [];
-    }
-    if (subtasks !== undefined) {
-      updateFields.subtasks = Array.isArray(subtasks)
-        ? subtasks.map((st, index) => ({
-            _id: st._id || `sub_${Date.now()}_${index}`,
-            title: st.title || '',
-            completed: Boolean(st.completed),
-          }))
-        : [];
-    }
-
-    // RG-04 : Validité d'attribution de tâche
-    if (assigneeId !== undefined) {
-      if (assigneeId === null || assigneeId === '') {
-        updateFields.assigneeId = null;
-      } else {
-        const validAssigneeId = toObjectId(assigneeId);
-        if (validAssigneeId) {
-          const assignee = await db.collection('users').findOne({
-            _id: validAssigneeId,
-            companyId: existingTask.companyId,
-          });
-
-          if (!assignee) {
-            return NextResponse.json({
-              error: 'Violation RG-04 : L\'utilisateur n\'appartient pas à la même entreprise.'
-            }, { status: 400 });
-          }
-
-          // Vérifier si le projet a des membres
-          const project = await db.collection('projects').findOne({
-            _id: existingTask.projectId,
-            companyId: existingTask.companyId,
-          });
-
-          if (project && project.memberIds && project.memberIds.length > 0) {
-            const isMember = project.memberIds.some((m) => m.toString() === validAssigneeId.toString());
-            if (!isMember) {
-              return NextResponse.json({
-                error: 'Violation RG-04 : L\'utilisateur doit faire partie des membres du projet.'
-              }, { status: 400 });
-            }
-          }
-
-          updateFields.assigneeId = validAssigneeId;
-        }
+      if (assigneeCheck.value !== undefined) {
+        updateFields.assigneeId = assigneeCheck.value;
       }
     }
 
@@ -178,10 +164,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Tâche introuvable dans cette entreprise' }, { status: 404 });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Tâche supprimée avec succès'
-    });
+    return NextResponse.json({ success: true, message: 'Tâche supprimée avec succès' });
   } catch (error) {
     console.error('Erreur DELETE /api/tasks/[id]:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

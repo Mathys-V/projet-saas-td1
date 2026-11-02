@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Briefcase, Shield, Lock, Palette } from 'lucide-react';
+import { X, User } from 'lucide-react';
 
 const AVATAR_COLORS = [
   '#4F46E5', // Indigo
@@ -55,7 +55,14 @@ export default function UserModal({
 
   if (!isOpen) return null;
 
-  const isEditing = Boolean(user && user._id);
+  const isEditing = Boolean(user?._id);
+
+  let submitButtonText = 'Ajouter';
+  if (saving) {
+    submitButtonText = 'Enregistrement...';
+  } else if (isEditing) {
+    submitButtonText = 'Mettre à jour';
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -98,10 +105,11 @@ export default function UserModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="user-fullname-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Nom complet *
             </label>
             <input
+              id="user-fullname-input"
               type="text"
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
@@ -112,10 +120,11 @@ export default function UserModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="user-email-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Adresse e-mail *
             </label>
             <input
+              id="user-email-input"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -127,10 +136,11 @@ export default function UserModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label htmlFor="user-role-select" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Rôle (RG-05)
               </label>
               <select
+                id="user-role-select"
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -142,10 +152,11 @@ export default function UserModal({
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label htmlFor="user-jobtitle-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Poste / Titre
               </label>
               <input
+                id="user-jobtitle-input"
                 type="text"
                 value={formData.jobTitle}
                 onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
@@ -156,10 +167,11 @@ export default function UserModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="user-password-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               {isEditing ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe'}
             </label>
             <input
+              id="user-password-input"
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -170,9 +182,9 @@ export default function UserModal({
 
           {/* Couleur d'avatar */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+            <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
               Couleur d&apos;avatar
-            </label>
+            </span>
             <div className="flex items-center space-x-2">
               {AVATAR_COLORS.map((c) => (
                 <button
@@ -201,7 +213,7 @@ export default function UserModal({
               disabled={saving}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
             >
-              {saving ? 'Enregistrement...' : isEditing ? 'Mettre à jour' : 'Ajouter'}
+              {submitButtonText}
             </button>
           </div>
         </form>

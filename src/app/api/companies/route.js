@@ -23,7 +23,7 @@ export async function POST(request) {
     const body = await request.json();
     const { name, industry, description, themeColor } = body;
 
-    if (!name || !name.trim()) {
+    if (!name?.trim()) {
       return NextResponse.json({ error: 'Le nom de l\'entreprise est obligatoire' }, { status: 400 });
     }
 
@@ -35,8 +35,8 @@ export async function POST(request) {
       _id: new ObjectId(),
       name: name.trim(),
       slug,
-      industry: industry ? industry.trim() : 'Général',
-      description: description ? description.trim() : '',
+      industry: industry?.trim() || 'Général',
+      description: description?.trim() || '',
       themeColor: themeColor || '#4F46E5',
       createdAt: now,
       updatedAt: now,

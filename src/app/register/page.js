@@ -7,21 +7,15 @@ import { useApp } from '@/components/Context';
 import {
   Building2,
   UserPlus,
-  Mail,
-  Lock,
-  User,
-  Briefcase,
-  Sparkles,
   ArrowRight,
   AlertCircle,
-  CheckCircle2,
 } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register, companies } = useApp();
 
-  const [mode, setMode] = useState('new_company'); // 'new_company' | 'join_company'
+  const [mode, setMode] = useState('new_company');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -145,10 +139,11 @@ export default function RegisterPage() {
               </span>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label htmlFor="reg-company-name" className="block text-xs font-bold text-slate-700 mb-1">
                   Nom de l&apos;entreprise *
                 </label>
                 <input
+                  id="reg-company-name"
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
@@ -160,10 +155,11 @@ export default function RegisterPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label htmlFor="reg-industry" className="block text-xs font-bold text-slate-700 mb-1">
                     Secteur d&apos;activité
                   </label>
                   <input
+                    id="reg-industry"
                     type="text"
                     value={industry}
                     onChange={(e) => setIndustry(e.target.value)}
@@ -172,10 +168,11 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label htmlFor="reg-theme-color" className="block text-xs font-bold text-slate-700 mb-1">
                     Couleur visuelle
                   </label>
                   <select
+                    id="reg-theme-color"
                     value={themeColor}
                     onChange={(e) => setThemeColor(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -188,6 +185,20 @@ export default function RegisterPage() {
                   </select>
                 </div>
               </div>
+
+              <div>
+                <label htmlFor="reg-company-desc" className="block text-xs font-bold text-slate-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  id="reg-company-desc"
+                  value={companyDesc}
+                  onChange={(e) => setCompanyDesc(e.target.value)}
+                  rows={2}
+                  placeholder="Présentation de l'entreprise..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
           ) : (
             /* Sélection de l'entreprise existante */
@@ -198,7 +209,11 @@ export default function RegisterPage() {
               </span>
 
               <div>
+                <label htmlFor="reg-company-select" className="block text-xs font-bold text-slate-700 mb-1">
+                  Organisation cliente
+                </label>
                 <select
+                  id="reg-company-select"
                   value={selectedCompanyId}
                   onChange={(e) => setSelectedCompanyId(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
@@ -214,10 +229,11 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label htmlFor="reg-role-select" className="block text-xs font-bold text-slate-700 mb-1">
                   Rôle demandé
                 </label>
                 <select
+                  id="reg-role-select"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
@@ -238,10 +254,11 @@ export default function RegisterPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label htmlFor="reg-fullname-input" className="block text-xs font-bold text-slate-700 mb-1">
                   Nom complet *
                 </label>
                 <input
+                  id="reg-fullname-input"
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
@@ -252,10 +269,11 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label htmlFor="reg-jobtitle-input" className="block text-xs font-bold text-slate-700 mb-1">
                   Poste / Titre
                 </label>
                 <input
+                  id="reg-jobtitle-input"
                   type="text"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
@@ -266,10 +284,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label htmlFor="reg-email-input" className="block text-xs font-bold text-slate-700 mb-1">
                 Adresse e-mail *
               </label>
               <input
+                id="reg-email-input"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -280,10 +299,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
+              <label htmlFor="reg-password-input" className="block text-xs font-bold text-slate-700 mb-1">
                 Mot de passe *
               </label>
               <input
+                id="reg-password-input"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Users, FolderKanban } from 'lucide-react';
+import { X, Users, FolderKanban } from 'lucide-react';
 
 export default function ProjectModal({
   isOpen,
@@ -42,7 +42,14 @@ export default function ProjectModal({
 
   if (!isOpen) return null;
 
-  const isEditing = Boolean(project && project._id);
+  const isEditing = Boolean(project?._id);
+
+  let submitButtonText = 'Créer le projet';
+  if (saving) {
+    submitButtonText = 'Enregistrement...';
+  } else if (isEditing) {
+    submitButtonText = 'Mettre à jour';
+  }
 
   const handleToggleMember = (userId) => {
     const strId = String(userId);
@@ -97,10 +104,11 @@ export default function ProjectModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="project-name-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Nom du projet *
             </label>
             <input
+              id="project-name-input"
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -111,10 +119,11 @@ export default function ProjectModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="project-desc-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Description
             </label>
             <textarea
+              id="project-desc-input"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={2}
@@ -125,10 +134,11 @@ export default function ProjectModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label htmlFor="project-status-select" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Statut
               </label>
               <select
+                id="project-status-select"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -140,10 +150,11 @@ export default function ProjectModal({
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label htmlFor="project-target-date-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                 Date cible
               </label>
               <input
+                id="project-target-date-input"
                 type="date"
                 value={formData.targetDate}
                 onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
@@ -154,7 +165,7 @@ export default function ProjectModal({
 
           {/* Assignation des membres (RG-03) */}
           <div className="border-t border-slate-200 pt-4">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center justify-between">
+            <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center justify-between">
               <span className="flex items-center space-x-1">
                 <Users className="w-3.5 h-3.5" />
                 <span>Membres de l&apos;équipe (RG-03 : même entreprise)</span>
@@ -162,7 +173,7 @@ export default function ProjectModal({
               <span className="text-[11px] text-slate-400 font-normal">
                 {formData.memberIds.length} sélectionné(s)
               </span>
-            </label>
+            </span>
 
             <div className="max-h-40 overflow-y-auto space-y-1.5 border border-slate-200 rounded-xl p-2 bg-slate-50">
               {companyUsers.length === 0 ? (
@@ -220,7 +231,7 @@ export default function ProjectModal({
               disabled={saving}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
             >
-              {saving ? 'Enregistrement...' : isEditing ? 'Mettre à jour' : 'Créer le projet'}
+              {submitButtonText}
             </button>
           </div>
         </form>

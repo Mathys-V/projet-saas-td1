@@ -8,14 +8,20 @@ import {
   FolderKanban,
   Plus,
   Calendar,
-  Users,
   Edit2,
   Trash2,
-  ArrowRight,
-  CheckCircle2,
-  AlertCircle,
   Building2,
 } from 'lucide-react';
+
+function getProjectStatusBadgeClass(status) {
+  if (status === 'COMPLETED') {
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  }
+  if (status === 'ARCHIVED') {
+    return 'bg-slate-100 text-slate-600 border-slate-200';
+  }
+  return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+}
 
 export default function ProjectsPage() {
   const {
@@ -52,7 +58,7 @@ export default function ProjectsPage() {
         console.error('Erreur chargement tâches:', err);
       }
     }
-    loadTasks();
+    void loadTasks();
   }, [activeCompany, companyProjects]);
 
   const handleOpenCreateModal = () => {
@@ -67,7 +73,6 @@ export default function ProjectsPage() {
 
   const handleSaveProject = async (projectPayload) => {
     if (selectedProject?._id) {
-      // Édition
       const res = await fetch(`/api/projects/${selectedProject._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -78,7 +83,6 @@ export default function ProjectsPage() {
         throw new Error(data.error || 'Erreur mise à jour projet');
       }
     } else {
-      // Création
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -178,6 +182,7 @@ export default function ProjectsPage() {
           {companyProjects.map((proj) => {
             const stats = tasksMap[proj._id] || { total: 0, done: 0 };
             const progress = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+            const statusBadgeClass = getProjectStatusBadgeClass(proj.status);
 
             const members = (proj.memberIds || [])
               .map((mId) => companyUsers.find((u) => u._id === (typeof mId === 'object' ? mId.toString() : mId)))
@@ -190,15 +195,7 @@ export default function ProjectsPage() {
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        proj.status === 'COMPLETED'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : proj.status === 'ARCHIVED'
-                          ? 'bg-slate-100 text-slate-600 border-slate-200'
-                          : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                      }`}
-                    >
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadgeClass}`}>
                       {proj.status || 'ACTIVE'}
                     </span>
 

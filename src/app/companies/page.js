@@ -9,9 +9,7 @@ import {
   Edit2,
   Trash2,
   CheckCircle2,
-  ShieldAlert,
   ArrowRight,
-  ExternalLink,
 } from 'lucide-react';
 
 export default function CompaniesPage() {
@@ -38,7 +36,6 @@ export default function CompaniesPage() {
 
   const handleSaveCompany = async (companyPayload) => {
     if (selectedCompany?._id) {
-      // Édition
       const res = await fetch(`/api/companies/${selectedCompany._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -49,7 +46,6 @@ export default function CompaniesPage() {
         throw new Error(data.error || 'Erreur mise à jour entreprise');
       }
     } else {
-      // Création
       const res = await fetch('/api/companies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -3,6 +3,29 @@ import { getDatabase, toObjectId } from '@/lib/mongodb';
 
 export const dynamic = 'force-dynamic';
 
+async function validateMembers(db, companyId, memberIds) {
+  if (!Array.isArray(memberIds)) return { valid: true, formattedIds: undefined };
+  const formattedIds = memberIds.map(toObjectId).filter(Boolean);
+  if (formattedIds.length === 0) return { valid: true, formattedIds: [] };
+
+  const count = await db.collection('users').countDocuments({
+    companyId,
+    _id: { $in: formattedIds }
+  });
+  return { valid: count === formattedIds.length, formattedIds };
+}
+
+function buildProjectUpdateFields(body, formattedMemberIds) {
+  const fields = { updatedAt: new Date().toISOString() };
+  if (body.name !== undefined) fields.name = body.name.trim();
+  if (body.description !== undefined) fields.description = body.description.trim();
+  if (body.status !== undefined) fields.status = body.status;
+  if (body.startDate !== undefined) fields.startDate = body.startDate;
+  if (body.targetDate !== undefined) fields.targetDate = body.targetDate;
+  if (formattedMemberIds !== undefined) fields.memberIds = formattedMemberIds;
+  return fields;
+}
+
 export async function GET(request, { params }) {
   try {
     const projectId = toObjectId(params.id);
@@ -41,11 +64,9 @@ export async function PUT(request, { params }) {
     }
 
     const body = await request.json();
-    const { companyId, name, description, status, memberIds, startDate, targetDate } = body;
-
     const filter = { _id: projectId };
-    if (companyId) {
-      const validCompanyId = toObjectId(companyId);
+    if (body.companyId) {
+      const validCompanyId = toObjectId(body.companyId);
       if (validCompanyId) filter.companyId = validCompanyId;
     }
 
@@ -55,41 +76,14 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Projet introuvable ou accès non autorisé' }, { status: 404 });
     }
 
-    const updateFields = {
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (name !== undefined) updateFields.name = name.trim();
-    if (description !== undefined) updateFields.description = description.trim();
-    if (status !== undefined) updateFields.status = status;
-    if (startDate !== undefined) updateFields.startDate = startDate;
-    if (targetDate !== undefined) updateFields.targetDate = targetDate;
-
-    if (memberIds !== undefined) {
-      const formattedMemberIds = [];
-      if (Array.isArray(memberIds)) {
-        for (const mId of memberIds) {
-          const objId = toObjectId(mId);
-          if (objId) formattedMemberIds.push(objId);
-        }
-
-        // RG-03 : Vérifier que tous les utilisateurs assignés appartiennent à la même entreprise
-        if (formattedMemberIds.length > 0) {
-          const validMembersCount = await db.collection('users').countDocuments({
-            companyId: existingProject.companyId,
-            _id: { $in: formattedMemberIds }
-          });
-
-          if (validMembersCount !== formattedMemberIds.length) {
-            return NextResponse.json({
-              error: 'Violation RG-03 : Un utilisateur ne peut être assigné à un projet que s\'il appartient à la même entreprise.'
-            }, { status: 400 });
-          }
-        }
-      }
-      updateFields.memberIds = formattedMemberIds;
+    const { valid, formattedIds } = await validateMembers(db, existingProject.companyId, body.memberIds);
+    if (!valid) {
+      return NextResponse.json({
+        error: 'Violation RG-03 : Un utilisateur ne peut être assigné à un projet que s\'il appartient à la même entreprise.'
+      }, { status: 400 });
     }
 
+    const updateFields = buildProjectUpdateFields(body, formattedIds);
     const result = await db.collection('projects').findOneAndUpdate(
       filter,
       { $set: updateFields },

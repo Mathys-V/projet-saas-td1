@@ -24,7 +24,7 @@ export async function GET(request) {
     const { db } = await getDatabase();
     const users = await db.collection('users')
       .find({ companyId })
-      .project({ password: 0 }) // Ne pas renvoyer le mot de passe
+      .project({ password: 0 })
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -54,16 +54,12 @@ export async function POST(request) {
     }
 
     const { db } = await getDatabase();
-
-    // Vérifier l'existence de l'entreprise
     const company = await db.collection('companies').findOne({ _id: validCompanyId });
     if (!company) {
       return NextResponse.json({ error: 'Entreprise introuvable' }, { status: 404 });
     }
 
     const cleanEmail = email.trim().toLowerCase();
-
-    // Vérifier unicité de l'e-mail dans l'entreprise (Index unique companyId + email)
     const existing = await db.collection('users').findOne({ companyId: validCompanyId, email: cleanEmail });
     if (existing) {
       return NextResponse.json({ error: 'Un collaborateur avec cette adresse e-mail existe déjà dans cette entreprise' }, { status: 409 });
@@ -75,7 +71,7 @@ export async function POST(request) {
       companyId: validCompanyId,
       fullName: fullName.trim(),
       email: cleanEmail,
-      role: role || 'MEMBER', // ADMIN, MANAGER, MEMBER
+      role: role || 'MEMBER',
       jobTitle: jobTitle ? jobTitle.trim() : 'Collaborateur',
       avatarColor: avatarColor || '#4F46E5',
       password: hashPassword(password || 'password123'),
@@ -85,7 +81,8 @@ export async function POST(request) {
 
     await db.collection('users').insertOne(newUser);
 
-    const { password: _, ...safeUser } = newUser;
+    const safeUser = { ...newUser };
+    delete safeUser.password;
     return NextResponse.json(safeUser, { status: 201 });
   } catch (error) {
     console.error('Erreur POST /api/users:', error);

@@ -8,8 +8,6 @@ import {
   LogIn,
   Mail,
   Lock,
-  Building2,
-  ShieldCheck,
   Sparkles,
   ArrowRight,
   AlertCircle,
@@ -18,7 +16,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, companies, companyUsers, activeCompany, switchCompany, switchUser } = useApp();
+  const { login, switchCompany, switchUser } = useApp();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,8 +53,7 @@ export default function LoginPage() {
       if (res.success) {
         router.push('/dashboard');
       } else {
-        // Fallback si mot de passe non requis
-        router.push('/dashboard');
+        setError(res.error || 'Erreur lors de la connexion démo');
       }
     } catch (err) {
       setError(err.message);
@@ -72,7 +69,6 @@ export default function LoginPage() {
       role: 'ADMIN (CTO)',
       email: 'alice.martin@technova.io',
       color: '#4F46E5',
-      companyColor: '#4F46E5',
     },
     {
       company: 'TechNova Solutions',
@@ -80,7 +76,6 @@ export default function LoginPage() {
       role: 'MANAGER (Product)',
       email: 'lucas.bernard@technova.io',
       color: '#0EA5E9',
-      companyColor: '#4F46E5',
     },
     {
       company: 'GreenLogistique (Tenant 2)',
@@ -88,7 +83,6 @@ export default function LoginPage() {
       role: 'ADMIN (Ops)',
       email: 'marc.lefevre@greenlog.fr',
       color: '#059669',
-      companyColor: '#059669',
     },
   ];
 
@@ -116,12 +110,13 @@ export default function LoginPage() {
         {/* Formulaire standard */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="login-email-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Adresse e-mail
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
+                id="login-email-input"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -133,12 +128,13 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="login-password-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Mot de passe
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
+                id="login-password-input"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -176,7 +172,7 @@ export default function LoginPage() {
             {demoAccounts.map((account) => (
               <button
                 key={account.email}
-                onClick={() => handleFastDemoLogin(account.email)}
+                onClick={() => void handleFastDemoLogin(account.email)}
                 className="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all flex items-center justify-between group"
               >
                 <div className="flex items-center space-x-2.5 truncate">

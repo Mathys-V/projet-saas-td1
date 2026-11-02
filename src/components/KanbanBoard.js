@@ -5,13 +5,11 @@ import KanbanColumn from './KanbanColumn';
 import TaskModal from './TaskModal';
 import {
   Search,
-  Filter,
   Plus,
   User,
   SlidersHorizontal,
   X,
   AlertCircle,
-  FolderKanban,
 } from 'lucide-react';
 
 const COLUMNS = [
@@ -20,6 +18,28 @@ const COLUMNS = [
   { id: 'IN_REVIEW', title: 'En revue', dotColor: 'bg-amber-500' },
   { id: 'DONE', title: 'Terminé', dotColor: 'bg-emerald-500' },
 ];
+
+function matchesSearch(task, query) {
+  if (!query) return true;
+  const inTitle = task.title?.toLowerCase().includes(query);
+  const inDesc = task.description?.toLowerCase().includes(query);
+  return inTitle || inDesc;
+}
+
+function matchesAssignee(task, selectedAssignee, onlyMyTasks, activeUserId) {
+  if (onlyMyTasks && activeUserId) {
+    if (!task.assigneeId || task.assigneeId.toString() !== activeUserId.toString()) {
+      return false;
+    }
+  }
+
+  if (selectedAssignee === 'unassigned') {
+    return !task.assigneeId;
+  } else if (selectedAssignee) {
+    return task.assigneeId?.toString() === selectedAssignee;
+  }
+  return true;
+}
 
 export default function KanbanBoard({
   companyId,
@@ -74,7 +94,7 @@ export default function KanbanBoard({
   }, [companyId, projectId]);
 
   useEffect(() => {
-    fetchTasks();
+    void fetchTasks();
   }, [fetchTasks]);
 
   // Tous les tags disponibles dans les tâches
@@ -88,41 +108,14 @@ export default function KanbanBoard({
 
   // Filtrage dynamique côté client
   const filteredTasks = useMemo(() => {
+    const cleanQuery = searchQuery.trim().toLowerCase();
+    const activeUserId = activeUser?._id;
+
     return tasks.filter((task) => {
-      // Filtre recherche texte (titre ou description)
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const inTitle = task.title?.toLowerCase().includes(query);
-        const inDesc = task.description?.toLowerCase().includes(query);
-        if (!inTitle && !inDesc) return false;
-      }
-
-      // Filtre "Mes tâches"
-      if (onlyMyTasks && activeUser) {
-        if (!task.assigneeId || task.assigneeId.toString() !== activeUser._id.toString()) {
-          return false;
-        }
-      }
-
-      // Filtre par utilisateur attribué
-      if (selectedAssignee) {
-        if (selectedAssignee === 'unassigned') {
-          if (task.assigneeId) return false;
-        } else {
-          if (!task.assigneeId || task.assigneeId.toString() !== selectedAssignee) return false;
-        }
-      }
-
-      // Filtre par priorité
-      if (selectedPriority && task.priority !== selectedPriority) {
-        return false;
-      }
-
-      // Filtre par tag
-      if (selectedTag && !(task.tags || []).includes(selectedTag)) {
-        return false;
-      }
-
+      if (!matchesSearch(task, cleanQuery)) return false;
+      if (!matchesAssignee(task, selectedAssignee, onlyMyTasks, activeUserId)) return false;
+      if (selectedPriority && task.priority !== selectedPriority) return false;
+      if (selectedTag && !(task.tags || []).includes(selectedTag)) return false;
       return true;
     });
   }, [tasks, searchQuery, onlyMyTasks, activeUser, selectedAssignee, selectedPriority, selectedTag]);
@@ -152,12 +145,11 @@ export default function KanbanBoard({
       });
 
       if (!res.ok) {
-        // En cas d'erreur serveur, recharger les tâches
-        fetchTasks();
+        void fetchTasks();
       }
     } catch (err) {
       console.error('Erreur mise à jour statut:', err);
-      fetchTasks();
+      void fetchTasks();
     }
   };
 
@@ -174,7 +166,6 @@ export default function KanbanBoard({
 
   const handleSaveTask = async (taskPayload) => {
     if (activeTaskForModal?._id) {
-      // Édition PUT
       const res = await fetch(`/api/tasks/${activeTaskForModal._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -187,7 +178,6 @@ export default function KanbanBoard({
       const updated = await res.json();
       setTasks((prev) => prev.map((t) => (t._id === updated._id ? updated : t)));
     } else {
-      // Création POST
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,7 +221,43 @@ export default function KanbanBoard({
   };
 
   const hasActiveFilters =
-    searchQuery || selectedAssignee || selectedPriority || selectedTag || onlyMyTasks;
+    Boolean(searchQuery || selectedAssignee || selectedPriority || selectedTag || onlyMyTasks);
+
+  let kanbanContent;
+  if (loading) {
+    kanbanContent = (
+      <div className="h-64 flex items-center justify-center text-slate-400 text-sm">
+        <div className="animate-pulse flex items-center space-x-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping" />
+          <span>Chargement du tableau Kanban...</span>
+        </div>
+      </div>
+    );
+  } else if (error) {
+    kanbanContent = (
+      <div className="bg-rose-50 border border-rose-200 p-4 rounded-xl text-rose-700 text-sm flex items-center space-x-2">
+        <AlertCircle className="w-5 h-5 shrink-0" />
+        <span>{error}</span>
+      </div>
+    );
+  } else {
+    kanbanContent = (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+        {COLUMNS.map((col) => (
+          <KanbanColumn
+            key={col.id}
+            column={col}
+            tasks={filteredTasks.filter((t) => t.status === col.id)}
+            usersMap={usersMap}
+            onTaskClick={handleOpenEditModal}
+            onDragStart={handleDragStart}
+            onDropTask={handleDropTask}
+            onAddTaskClick={handleOpenCreateModal}
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -354,35 +380,7 @@ export default function KanbanBoard({
         </div>
       </div>
 
-      {/* Grille Kanban des 4 colonnes */}
-      {loading ? (
-        <div className="h-64 flex items-center justify-center text-slate-400 text-sm">
-          <div className="animate-pulse flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping" />
-            <span>Chargement du tableau Kanban...</span>
-          </div>
-        </div>
-      ) : error ? (
-        <div className="bg-rose-50 border border-rose-200 p-4 rounded-xl text-rose-700 text-sm flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 shrink-0" />
-          <span>{error}</span>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
-          {COLUMNS.map((col) => (
-            <KanbanColumn
-              key={col.id}
-              column={col}
-              tasks={filteredTasks.filter((t) => t.status === col.id)}
-              usersMap={usersMap}
-              onTaskClick={handleOpenEditModal}
-              onDragStart={handleDragStart}
-              onDropTask={handleDropTask}
-              onAddTaskClick={handleOpenCreateModal}
-            />
-          ))}
-        </div>
-      )}
+      {kanbanContent}
 
       {/* Modale d'enrichissement et d'édition de tâche */}
       <TaskModal

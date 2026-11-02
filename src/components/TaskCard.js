@@ -6,8 +6,6 @@ import {
   CheckSquare,
   MessageSquare,
   AlertCircle,
-  Clock,
-  MoreVertical,
 } from 'lucide-react';
 
 export default function TaskCard({ task, onClick, onDragStart, assignee }) {
@@ -32,11 +30,21 @@ export default function TaskCard({ task, onClick, onDragStart, assignee }) {
 
   const priorityInfo = getPriorityBadge(task.priority);
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick(task);
+    }
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
       draggable
       onDragStart={(e) => onDragStart(e, task)}
       onClick={() => onClick(task)}
+      onKeyDown={handleKeyDown}
       className="group bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-grab active:cursor-grabbing select-none"
     >
       {/* En-tête de carte : Priorité et Tags */}
@@ -70,9 +78,9 @@ export default function TaskCard({ task, onClick, onDragStart, assignee }) {
       {/* Tags */}
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
-          {task.tags.map((tag, idx) => (
+          {task.tags.map((tag) => (
             <span
-              key={idx}
+              key={tag}
               className="text-[10px] font-medium bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded"
             >
               #{tag}

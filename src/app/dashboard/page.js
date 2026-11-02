@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/components/Context';
 import {
-  LayoutDashboard,
   FolderKanban,
   Users,
   CheckCircle2,
@@ -14,7 +13,6 @@ import {
   ArrowRight,
   ShieldCheck,
   Building2,
-  Calendar,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -28,14 +26,12 @@ export default function DashboardPage() {
   } = useApp();
 
   const [tasks, setTasks] = useState([]);
-  const [loadingTasks, setLoadingTasks] = useState(false);
 
   // Charger toutes les tâches de l'entreprise active pour les KPIs globaux
   useEffect(() => {
     if (!activeCompany) return;
     async function loadAllCompanyTasks() {
       try {
-        setLoadingTasks(true);
         const res = await fetch(`/api/tasks?companyId=${activeCompany._id}`);
         if (res.ok) {
           const data = await res.json();
@@ -43,11 +39,9 @@ export default function DashboardPage() {
         }
       } catch (err) {
         console.error('Erreur chargement tâches dashboard:', err);
-      } finally {
-        setLoadingTasks(false);
       }
     }
-    loadAllCompanyTasks();
+    void loadAllCompanyTasks();
   }, [activeCompany]);
 
   // KPIs Entreprise

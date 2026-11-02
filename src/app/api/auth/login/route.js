@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, toObjectId } from '@/lib/mongodb';
+import { getDatabase } from '@/lib/mongodb';
 import { ensureSeedData } from '@/lib/seed';
 import { verifyPassword } from '@/lib/auth';
 
@@ -33,7 +33,8 @@ export async function POST(request) {
     const company = await db.collection('companies').findOne({ _id: user.companyId });
 
     // Nettoyer les données sensibles (mot de passe)
-    const { password: _, ...safeUser } = user;
+    const safeUser = { ...user };
+    delete safeUser.password;
 
     return NextResponse.json({
       success: true,

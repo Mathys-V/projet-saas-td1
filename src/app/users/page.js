@@ -4,15 +4,11 @@ import React, { useState } from 'react';
 import { useApp } from '@/components/Context';
 import UserModal from '@/components/UserModal';
 import {
-  Users,
   UserPlus,
   Mail,
-  Briefcase,
-  Shield,
   Edit2,
   Trash2,
   Building2,
-  CheckCircle2,
   UserCheck,
 } from 'lucide-react';
 
@@ -42,7 +38,6 @@ export default function UsersPage() {
 
   const handleSaveUser = async (userPayload) => {
     if (selectedUser?._id) {
-      // Édition
       const res = await fetch(`/api/users/${selectedUser._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +48,6 @@ export default function UsersPage() {
         throw new Error(data.error || 'Erreur modification collaborateur');
       }
     } else {
-      // Création
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,7 +145,6 @@ export default function UsersPage() {
           const roleBadge = getRoleBadge(u.role);
           const isCurrentUser = activeUser?._id === u._id;
 
-          // Compter le nombre de projets auxquels participe cet utilisateur
           const assignedProjectsCount = companyProjects.filter((p) =>
             (p.memberIds || []).some(
               (mId) => (typeof mId === 'object' ? mId.toString() : mId) === u._id

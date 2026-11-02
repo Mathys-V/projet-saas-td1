@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, toObjectId } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +13,7 @@ export async function POST(request, { params }) {
     const body = await request.json();
     const { authorId, authorName, content, companyId } = body;
 
-    if (!content || !content.trim()) {
+    if (!content?.trim()) {
       return NextResponse.json({ error: 'Le contenu du commentaire ne peut pas être vide' }, { status: 400 });
     }
 
@@ -24,8 +23,9 @@ export async function POST(request, { params }) {
       if (validCompanyId) filter.companyId = validCompanyId;
     }
 
+    const randomSuffix = Math.random().toString(36).slice(2, 7);
     const newComment = {
-      _id: `com_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      _id: `com_${Date.now()}_${randomSuffix}`,
       authorId: authorId ? toObjectId(authorId) : null,
       authorName: authorName || 'Utilisateur',
       content: content.trim(),

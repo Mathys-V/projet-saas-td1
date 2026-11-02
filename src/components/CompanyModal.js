@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Building2, Palette } from 'lucide-react';
+import { X, Building2 } from 'lucide-react';
 
 const THEME_COLORS = [
   '#4F46E5', // Indigo
@@ -48,7 +48,14 @@ export default function CompanyModal({
 
   if (!isOpen) return null;
 
-  const isEditing = Boolean(company && company._id);
+  const isEditing = Boolean(company?._id);
+
+  let submitButtonText = 'Créer l\'entreprise';
+  if (saving) {
+    submitButtonText = 'Enregistrement...';
+  } else if (isEditing) {
+    submitButtonText = 'Mettre à jour';
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,10 +95,11 @@ export default function CompanyModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="company-name-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Nom de l&apos;entreprise *
             </label>
             <input
+              id="company-name-input"
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -102,10 +110,11 @@ export default function CompanyModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="company-industry-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Secteur d&apos;activité
             </label>
             <input
+              id="company-industry-input"
               type="text"
               value={formData.industry}
               onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
@@ -115,10 +124,11 @@ export default function CompanyModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+            <label htmlFor="company-desc-input" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
               Description
             </label>
             <textarea
+              id="company-desc-input"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
@@ -129,9 +139,9 @@ export default function CompanyModal({
 
           {/* Couleur d'identité visuelle */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+            <span className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
               Couleur visuelle
-            </label>
+            </span>
             <div className="flex items-center space-x-2">
               {THEME_COLORS.map((c) => (
                 <button
@@ -160,7 +170,7 @@ export default function CompanyModal({
               disabled={saving}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:opacity-50"
             >
-              {saving ? 'Enregistrement...' : isEditing ? 'Mettre à jour' : 'Créer l\'entreprise'}
+              {submitButtonText}
             </button>
           </div>
         </form>

@@ -8,10 +8,6 @@ import ProjectModal from '@/components/ProjectModal';
 import {
   FolderKanban,
   Plus,
-  Calendar,
-  Users,
-  Settings,
-  ShieldCheck,
   Building2,
   ChevronRight,
 } from 'lucide-react';
@@ -110,10 +106,11 @@ export default function KanbanPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Onglets / Liste des projets */}
             <div className="flex items-center space-x-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
+              <label htmlFor="kanban-project-select" className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
                 Projet:
               </label>
               <select
+                id="kanban-project-select"
                 value={activeProject?._id || ''}
                 onChange={(e) => switchProject(e.target.value)}
                 className="px-3.5 py-1.5 text-xs font-bold rounded-xl border border-slate-300 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"

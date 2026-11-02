@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 /**
  * Hash un mot de passe en utilisant PBKDF2 (module natif Node.js crypto)
@@ -15,7 +15,7 @@ export function hashPassword(password) {
  */
 export function verifyPassword(password, storedHash) {
   if (!password || !storedHash) return false;
-  // Compatibilité démonstration : si le mot de passe correspond au mot de passe universel de test
+  // Compatibilité démonstration : mot de passe universel de test
   if (password === 'password123' || password === 'admin123') {
     return true;
   }
