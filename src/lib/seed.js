@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { getDatabase } from './mongodb';
+import { hashPassword } from './auth';
 
 let seedChecked = false;
 
@@ -17,6 +18,7 @@ export async function ensureSeedData() {
   console.log('🌱 Base de données vide détectée : insertion des données de démonstration...');
 
   const now = new Date().toISOString();
+  const defaultPasswordHash = hashPassword('password123');
 
   // ==========================================
   // ENTREPRISE 1 : TechNova Solutions
@@ -69,6 +71,7 @@ export async function ensureSeedData() {
       role: 'ADMIN',
       jobTitle: 'CTO & Lead Architect',
       avatarColor: '#4F46E5',
+      password: defaultPasswordHash,
       createdAt: now,
       updatedAt: now,
     },
@@ -80,6 +83,7 @@ export async function ensureSeedData() {
       role: 'MANAGER',
       jobTitle: 'Product Manager',
       avatarColor: '#0EA5E9',
+      password: defaultPasswordHash,
       createdAt: now,
       updatedAt: now,
     },
@@ -91,6 +95,7 @@ export async function ensureSeedData() {
       role: 'MEMBER',
       jobTitle: 'Full-Stack Developer',
       avatarColor: '#EC4899',
+      password: defaultPasswordHash,
       createdAt: now,
       updatedAt: now,
     },
@@ -103,6 +108,7 @@ export async function ensureSeedData() {
       role: 'ADMIN',
       jobTitle: 'Directeur des Opérations',
       avatarColor: '#059669',
+      password: defaultPasswordHash,
       createdAt: now,
       updatedAt: now,
     },
@@ -114,6 +120,7 @@ export async function ensureSeedData() {
       role: 'MEMBER',
       jobTitle: 'Ingénieure IoT & Flotte',
       avatarColor: '#D97706',
+      password: defaultPasswordHash,
       createdAt: now,
       updatedAt: now,
     },
@@ -319,4 +326,15 @@ export async function ensureSeedData() {
 
   seedChecked = true;
   console.log('✅ Données de démonstration insérées avec succès !');
+}
+
+export async function resetDatabase() {
+  const { db } = await getDatabase();
+  await db.collection('companies').deleteMany({});
+  await db.collection('users').deleteMany({});
+  await db.collection('projects').deleteMany({});
+  await db.collection('tasks').deleteMany({});
+  seedChecked = false;
+  await ensureSeedData();
+  return { success: true, message: 'Base de données réinitialisée avec les données de démonstration.' };
 }

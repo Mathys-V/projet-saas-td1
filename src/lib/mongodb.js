@@ -30,7 +30,7 @@ async function ensureIndexes(db) {
       db.collection('users').createIndex({ companyId: 1, email: 1 }, { unique: true }),
       db.collection('projects').createIndex({ companyId: 1, createdAt: -1 }),
       db.collection('tasks').createIndex({ companyId: 1, projectId: 1, status: 1 }),
-      db.collection('tasks').createIndex({ companyId: 1, assigneeId: 1 })
+      db.collection('tasks').createIndex({ companyId: 1, assigneeId: 1 }),
     ]);
     indexesCreated = true;
   } catch (error) {
@@ -60,6 +60,9 @@ export async function getDatabase() {
 export function toObjectId(id) {
   if (!id) return null;
   if (id instanceof ObjectId) return id;
+  if (typeof id === 'object' && id.$oid) {
+    id = id.$oid;
+  }
   if (typeof id === 'string' && ObjectId.isValid(id)) {
     return new ObjectId(id);
   }
