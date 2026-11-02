@@ -2,15 +2,20 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Installation des dépendances
-COPY package.json ./
-RUN npm install
+# Installation sécurisée des dépendances sans exécution de scripts arbitraires
+COPY package.json package-lock.json* ./
+RUN npm install --ignore-scripts
 
-# Copie du code source et configuration initiale
-COPY . .
+# Copie explicite des fichiers applicatifs (évite la copie récursive globale de données sensibles)
+COPY src ./src
+COPY config ./config
+COPY jsconfig.json next.config.js tailwind.config.js postcss.config.js ./
 
-# Build de l'application Next.js (les routes API sont en force-dynamic)
+# Build de l'application Next.js
 RUN npm run build
+
+# Exécution sous un utilisateur non-root pour la sécurité du conteneur
+USER node
 
 EXPOSE 3000
 

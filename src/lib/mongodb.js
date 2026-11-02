@@ -1,6 +1,6 @@
 import { MongoClient, ObjectId } from 'mongodb';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 let cachedClient = null;
 let cachedDb = null;
@@ -16,7 +16,7 @@ function loadDatabaseConfig() {
   const rawContent = fs.readFileSync(configPath, 'utf-8');
   const parsed = JSON.parse(rawContent);
 
-  if (!parsed.database || !parsed.database.uri) {
+  if (!parsed.database?.uri) {
     throw new Error('Le fichier config/database.config.json doit contenir "database.uri"');
   }
 

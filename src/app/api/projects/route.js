@@ -10,7 +10,7 @@ async function validateProjectMembers(db, companyId, memberIds) {
     return { valid: true, formattedIds: [] };
   }
 
-  const formattedIds = memberIds.map(toObjectId).filter(Boolean);
+  const formattedIds = memberIds.map((id) => toObjectId(id)).filter(Boolean);
   if (formattedIds.length === 0) {
     return { valid: true, formattedIds: [] };
   }

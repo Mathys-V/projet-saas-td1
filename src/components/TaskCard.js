@@ -30,22 +30,13 @@ export default function TaskCard({ task, onClick, onDragStart, assignee }) {
 
   const priorityInfo = getPriorityBadge(task.priority);
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick(task);
-    }
-  };
-
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       draggable
       onDragStart={(e) => onDragStart(e, task)}
       onClick={() => onClick(task)}
-      onKeyDown={handleKeyDown}
-      className="group bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-grab active:cursor-grabbing select-none"
+      className="w-full text-left group bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-grab active:cursor-grabbing select-none block"
     >
       {/* En-tête de carte : Priorité et Tags */}
       <div className="flex items-center justify-between gap-1 mb-2">
@@ -161,6 +152,6 @@ export default function TaskCard({ task, onClick, onDragStart, assignee }) {
           </span>
         )}
       </div>
-    </div>
+    </button>
   );
 }

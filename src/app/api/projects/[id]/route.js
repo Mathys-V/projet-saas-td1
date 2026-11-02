@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 async function validateMembers(db, companyId, memberIds) {
   if (!Array.isArray(memberIds)) return { valid: true, formattedIds: undefined };
-  const formattedIds = memberIds.map(toObjectId).filter(Boolean);
+  const formattedIds = memberIds.map((id) => toObjectId(id)).filter(Boolean);
   if (formattedIds.length === 0) return { valid: true, formattedIds: [] };
 
   const count = await db.collection('users').countDocuments({
