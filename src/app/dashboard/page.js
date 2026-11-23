@@ -23,6 +23,13 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 
+const STATUS_CONFIG = {
+  TODO: { label: 'À faire', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  IN_PROGRESS: { label: 'En cours', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  IN_REVIEW: { label: 'En revue', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  DONE: { label: 'Terminé', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const {
@@ -254,11 +261,11 @@ export default function DashboardPage() {
 
       {/* SECTION BONUS 1 : Pipeline d'Agrégation Avancé MongoDB ($facet, $group, $unwind) */}
       {analytics && (
-        <div className="bg-gradient-to-br from-indigo-50/60 via-purple-50/30 to-blue-50/60 border border-indigo-200/80 rounded-3xl p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
-                <Database className="w-4 h-4" />
+        <div className="bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-blue-50/70 border border-indigo-200/90 rounded-3xl p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shrink-0">
+                <Database className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center space-x-2">
@@ -266,63 +273,89 @@ export default function DashboardPage() {
                     Moteur d&apos;Agrégation MongoDB NoSQL ($aggregate + $facet)
                   </h3>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    Feature Bonus BDD
+                    Calcul Serveur
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 mt-0.5">
                   Calculé côté serveur MongoDB en 1 seule requête NoSQL sans boucle côté application.
                 </p>
               </div>
             </div>
 
-            <span className="text-[11px] font-mono text-indigo-700 bg-white/80 px-2.5 py-1 rounded-lg border border-indigo-200">
+            <span className="text-[11px] font-mono text-indigo-700 bg-white/90 px-3 py-1.5 rounded-xl border border-indigo-200 shadow-2xs self-start sm:self-auto">
               Pipeline: $match ➔ $facet ($group, $unwind, $cond)
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-            <div className="bg-white p-3.5 rounded-xl border border-indigo-100 shadow-xs">
-              <span className="text-[11px] font-bold text-slate-500 block">Tâches totales</span>
-              <span className="text-xl font-black text-slate-900 mt-0.5 block">
-                {analytics.overview?.totalTasks || 0}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {/* 1. Tâches totales */}
+            <div className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-xs flex flex-col justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Tâches totales
               </span>
-              <span className="text-[10px] text-emerald-600 font-semibold">
-                {analytics.overview?.completionRate || 0}% complétées
+              <div className="my-1.5">
+                <span className="text-2xl font-black text-slate-900">
+                  {analytics.overview?.totalTasks || 0}
+                </span>
+              </div>
+              <div className="flex items-center space-x-1.5 text-[11px] text-emerald-600 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>{analytics.overview?.completionRate || 0}% complétées</span>
+              </div>
+            </div>
+
+            {/* 2. Checklists / Sous-tâches */}
+            <div className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-xs flex flex-col justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Checklists (Sous-tâches)
+              </span>
+              <div className="my-1.5">
+                <span className="text-2xl font-black text-slate-900">
+                  {analytics.subtasks?.completedSubtasks || 0}
+                  <span className="text-base font-semibold text-slate-400"> / {analytics.subtasks?.totalSubtasks || 0}</span>
+                </span>
+              </div>
+              <span className="text-[11px] text-indigo-600 font-semibold">
+                {analytics.subtasks?.subtaskRate || 0}% terminées (déplié par $unwind)
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-indigo-100 shadow-xs">
-              <span className="text-[11px] font-bold text-slate-500 block">Checklists (Sous-tâches)</span>
-              <span className="text-xl font-black text-slate-900 mt-0.5 block">
-                {analytics.subtasks?.completedSubtasks || 0} / {analytics.subtasks?.totalSubtasks || 0}
+            {/* 3. Tâches en retard */}
+            <div className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-xs flex flex-col justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Tâches en retard
               </span>
-              <span className="text-[10px] text-indigo-600 font-semibold">
-                {analytics.subtasks?.subtaskRate || 0}% terminées ($unwind)
-              </span>
-            </div>
-
-            <div className="bg-white p-3.5 rounded-xl border border-indigo-100 shadow-xs">
-              <span className="text-[11px] font-bold text-slate-500 block">Tâches en retard</span>
-              <span className="text-xl font-black text-rose-600 mt-0.5 block">
-                {analytics.overview?.overdueTasks || 0}
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Filtre temporel NoSQL
+              <div className="my-1.5">
+                <span className="text-2xl font-black text-rose-600">
+                  {analytics.overview?.overdueTasks || 0}
+                </span>
+              </div>
+              <span className="text-[11px] text-rose-600 font-semibold flex items-center space-x-1">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>{analytics.overview?.overdueTasks > 0 ? 'Date d\'échéance dépassée' : 'Aucun retard'}</span>
               </span>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-indigo-100 shadow-xs">
-              <span className="text-[11px] font-bold text-slate-500 block">Répartition statuts</span>
-              <div className="flex items-center space-x-1.5 mt-1">
-                {(analytics.statusBreakdown || []).map((s) => (
-                  <span
-                    key={s._id}
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700"
-                    title={`${s._id}: ${s.count}`}
-                  >
-                    {s._id?.slice(0, 4)}: {s.count}
-                  </span>
-                ))}
+            {/* 4. Répartition par statut (sans aucune troncature) */}
+            <div className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-xs flex flex-col justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                Répartition des statuts
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'].map((statusKey) => {
+                  const item = (analytics.statusBreakdown || []).find((s) => s._id === statusKey);
+                  const count = item ? item.count : 0;
+                  const cfg = STATUS_CONFIG[statusKey] || { label: statusKey, color: 'bg-slate-100 text-slate-700 border-slate-200' };
+                  return (
+                    <div
+                      key={statusKey}
+                      className={`px-2 py-1 rounded-lg border text-[11px] font-semibold flex items-center justify-between ${cfg.color}`}
+                    >
+                      <span>{cfg.label}</span>
+                      <span className="font-extrabold ml-1">{count}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
