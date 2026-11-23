@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/Context';
 import CompanyModal from '@/components/CompanyModal';
 import {
@@ -13,16 +14,25 @@ import {
 } from 'lucide-react';
 
 export default function CompaniesPage() {
+  const router = useRouter();
   const {
     companies,
     activeCompany,
     switchCompany,
     reloadCompanies,
+    isAuthenticated,
+    isDemoMode,
     loading,
   } = useApp();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated && !isDemoMode) {
+      router.replace('/login');
+    }
+  }, [loading, isAuthenticated, isDemoMode, router]);
 
   const handleOpenCreateModal = () => {
     setSelectedCompany(null);

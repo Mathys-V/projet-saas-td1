@@ -22,18 +22,43 @@ docker compose down
 
 ---
 
-## 🔐 Inscription & Connexion SaaS
+## 🔐 Mode Normal vs Mode Test & Démonstration
 
-L'application propose deux méthodes d'authentification pour satisfaire à la fois les exigences de production et la fluidité d'évaluation :
+L'application intègre une séparation nette entre l'utilisation normale en production et l'environnement d'évaluation :
 
-1. **Page de Connexion (`/login`)** :
-   - Saisie e-mail & mot de passe (sécurisé via PBKDF2).
-   - **Boutons Démonstration en 1 Clic** : Connectez-vous instantanément en tant qu'Alice Martin (CTO TechNova), Lucas Bernard (Chef de projet) ou Marc Lefèvre (Admin GreenLogistique) sans saisir d'identifiants.
-2. **Page d'Inscription (`/register`)** :
-   - **Créer une nouvelle entreprise (Tenant)** : Provisionne instantanément une nouvelle organisation cliente isolée, son administrateur, ainsi qu'un premier projet d'accueil.
-   - **Rejoindre une entreprise** : Crée un compte collaborateur au sein d'une organisation existante.
-3. **Sélecteur Rapide de Contexte (Navbar)** :
-   - Situé dans la barre supérieure, il permet à l'évaluateur de basculer en un clic d'entreprise active et d'utilisateur actif sans déconnexion fastidieuse.
+1. **Mode Normal (Standard)** :
+   - À l'ouverture du site, tout utilisateur non connecté arrive sur la page `/login`.
+   - L'utilisateur peut se connecter avec ses identifiants ou créer sa propre organisation SaaS via `/register`.
+   - **Isolation visuelle stricte** : un utilisateur connecté ne voit que sa propre entreprise dans l'interface (aucun menu déroulant pour basculer sur les organisations concurrentes).
+2. **Mode Test & Démonstration (Évaluation rapide)** :
+   - Accessible en 1 clic depuis la page de connexion via le bouton **« Mode Démo (Accès Rapide) »**.
+   - Pré-charge instantanément les données de test (TechNova Solutions & GreenLogistique).
+   - Affiche un bandeau d'évaluation jaune et active le sélecteur rapide inter-entreprises dans la Navbar pour permettre au correcteur de vérifier instantanément le cloisonnement multi-tenant (RG-01).
+   - Inclut un bouton **Reset Seed (↺)** pour réinitialiser la base à son état d'origine à tout moment.
+
+---
+
+## 🌟 Fonctionnalités Bonus Spéciales MongoDB & SaaS
+
+En complément des fonctionnalités socles, plusieurs fonctionnalités à forte valeur ajoutée ont été implémentées :
+
+1. **Pipeline d'Agrégation Avancé MongoDB (`$facet`, `$group`, `$unwind`, `$cond`)** :
+   - Route API dédiée : `/api/analytics?companyId=...`
+   - Calcule l'intégralité des métriques, de la vélocité des sous-tâches et de la répartition par collaborateur en **une seule requête NoSQL complexe** exécutée directement sur le moteur MongoDB côté serveur.
+2. **Journal d'Audit & Historique NoSQL (`activity_logs`) avec Index TTL** :
+   - Traçabilité complète des actions (créations de tâches, déplacements Kanban, modifications de projet).
+   - Utilisation d'un **Index TTL MongoDB (`expireAfterSeconds: 30 jours`)** pour purge automatique sans script cron.
+   - Route API : `/api/activity-logs?companyId=...` et widget en direct sur le Dashboard.
+3. **Recherche Plein-Texte NoSQL via Index Texte MongoDB (`$text`, `$search`)** :
+   - Création d'index texte composés sur `tasks` et `projects`.
+   - Recherche pondérée avec calcul du score de pertinence (`textScore`).
+   - Route API : `/api/search?companyId=...&q=...`.
+4. **Export Complet des Données du Tenant (JSON & CSV)** :
+   - Téléchargement en 1 clic de l'intégralité des données de l'entreprise cliente au format JSON structuré ou CSV (tâches).
+   - Prouve l'étanchéité absolue de l'exportation (zéro fuite de données inter-entreprises).
+   - Route API : `/api/export?companyId=...&format=json|csv`.
+5. **Vue Calendrier / Échéances (Timeline)** :
+   - Sélecteur de vue sur le Kanban : bascule instantanée entre **Vue Colonnes Kanban** et **Vue Chronologique / Échéances** (En retard, Cette semaine, Plus tard, Sans date).
 
 ---
 

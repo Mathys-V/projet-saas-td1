@@ -4,14 +4,18 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 const AppContext = createContext(null);
 
-function resolveActiveUser(usersData, preferredUserId) {
+function resolveActiveUser(usersData, preferredUserId, isDemoMode) {
   if (!Array.isArray(usersData) || usersData.length === 0) return null;
   const savedUserId = preferredUserId || (typeof window !== 'undefined' ? localStorage.getItem('saas_active_user_id') : null);
   if (savedUserId) {
     const found = usersData.find((u) => u._id === savedUserId);
     if (found) return found;
   }
-  return usersData[0];
+  // En mode démo, on assigne par défaut le premier utilisateur si aucun n'est sélectionné
+  if (isDemoMode) {
+    return usersData[0];
+  }
+  return null;
 }
 
 function resolveActiveProject(projectsData) {
@@ -21,7 +25,7 @@ function resolveActiveProject(projectsData) {
     const found = projectsData.find((p) => p._id === savedProjId);
     if (found) return found;
   }
-  return projectsData[0];
+  return projectsData[0] || null;
 }
 
 export function AppProvider({ children }) {
@@ -31,12 +35,15 @@ export function AppProvider({ children }) {
   const [activeUser, setActiveUser] = useState(null);
   const [companyProjects, setCompanyProjects] = useState([]);
   const [activeProject, setActiveProject] = useState(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Charger les utilisateurs et projets de l'entreprise active
-  const loadCompanyData = useCallback(async (companyId, preferredUserId = null) => {
+  const loadCompanyData = useCallback(async (companyId, preferredUserId = null, demoModeFlag = null) => {
     try {
+      const isDemo = demoModeFlag !== null ? demoModeFlag : (typeof window !== 'undefined' && localStorage.getItem('saas_demo_mode') === 'true');
+
       const [usersRes, projectsRes] = await Promise.all([
         fetch(`/api/users?companyId=${companyId}`),
         fetch(`/api/projects?companyId=${companyId}`),
@@ -48,10 +55,12 @@ export function AppProvider({ children }) {
       setCompanyUsers(usersData);
       setCompanyProjects(projectsData);
 
-      const currentUser = resolveActiveUser(usersData, preferredUserId);
+      const currentUser = resolveActiveUser(usersData, preferredUserId, isDemo);
       setActiveUser(currentUser);
       if (currentUser && typeof window !== 'undefined') {
         localStorage.setItem('saas_active_user_id', currentUser._id);
+      } else if (!isDemo && typeof window !== 'undefined') {
+        localStorage.removeItem('saas_active_user_id');
       }
 
       const currentProj = resolveActiveProject(projectsData);
@@ -67,11 +76,15 @@ export function AppProvider({ children }) {
     }
   }, []);
 
-  // Charger les entreprises et initialiser la base (seed automatique)
-  const loadCompanies = useCallback(async (preferredCompanyId = null, preferredUserId = null) => {
+  // Charger les entreprises
+  const loadCompanies = useCallback(async (preferredCompanyId = null, preferredUserId = null, forceDemo = null) => {
     try {
       setLoading(true);
       setError(null);
+
+      const demoFlag = forceDemo !== null ? forceDemo : (typeof window !== 'undefined' && localStorage.getItem('saas_demo_mode') === 'true');
+      setIsDemoMode(Boolean(demoFlag));
+
       const res = await fetch('/api/companies');
       if (!res.ok) throw new Error('Impossible de charger les entreprises');
       const data = await res.json();
@@ -84,16 +97,25 @@ export function AppProvider({ children }) {
         if (savedCompId) {
           currentComp = data.find((c) => c._id === savedCompId);
         }
-        if (!currentComp) {
+
+        // Si aucun compte n'est enregistré : on n'auto-assigne que si on est en mode démo !
+        if (!currentComp && demoFlag) {
           currentComp = data[0];
         }
 
-        setActiveCompany(currentComp);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('saas_active_company_id', currentComp._id);
+        if (currentComp) {
+          setActiveCompany(currentComp);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('saas_active_company_id', currentComp._id);
+          }
+          await loadCompanyData(currentComp._id, preferredUserId, demoFlag);
+        } else {
+          setActiveCompany(null);
+          setActiveUser(null);
+          setCompanyUsers([]);
+          setCompanyProjects([]);
+          setLoading(false);
         }
-
-        await loadCompanyData(currentComp._id, preferredUserId);
       } else {
         setActiveCompany(null);
         setActiveUser(null);
@@ -108,6 +130,50 @@ export function AppProvider({ children }) {
     }
   }, [loadCompanyData]);
 
+  // Activer le mode démo (chargement des comptes de test)
+  const enableDemoMode = useCallback(async (demoEmail = null) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('saas_demo_mode', 'true');
+    }
+    setIsDemoMode(true);
+
+    if (demoEmail) {
+      // Connexion directe avec un email démo
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: demoEmail, password: 'password123' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.company && data.user) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('saas_active_company_id', data.company._id);
+          localStorage.setItem('saas_active_user_id', data.user._id);
+        }
+        await loadCompanies(data.company._id, data.user._id, true);
+        return { success: true };
+      }
+    }
+
+    await loadCompanies(null, null, true);
+    return { success: true };
+  }, [loadCompanies]);
+
+  // Quitter le mode démo
+  const exitDemoMode = useCallback(() => {
+    setIsDemoMode(false);
+    setActiveCompany(null);
+    setActiveUser(null);
+    setCompanyUsers([]);
+    setCompanyProjects([]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('saas_demo_mode');
+      localStorage.removeItem('saas_active_company_id');
+      localStorage.removeItem('saas_active_user_id');
+      localStorage.removeItem('saas_active_project_id');
+    }
+  }, []);
+
   // Basculer d'entreprise (Multi-tenant switch)
   const switchCompany = useCallback(async (companyId) => {
     const found = companies.find((c) => c._id === companyId);
@@ -118,9 +184,9 @@ export function AppProvider({ children }) {
         localStorage.removeItem('saas_active_user_id');
         localStorage.removeItem('saas_active_project_id');
       }
-      await loadCompanyData(found._id);
+      await loadCompanyData(found._id, null, isDemoMode);
     }
-  }, [companies, loadCompanyData]);
+  }, [companies, loadCompanyData, isDemoMode]);
 
   // Basculer d'utilisateur actif
   const switchUser = useCallback((userId) => {
@@ -144,7 +210,7 @@ export function AppProvider({ children }) {
     }
   }, [companyProjects]);
 
-  // Connexion
+  // Connexion standard
   const login = useCallback(async (email, password) => {
     try {
       const res = await fetch('/api/auth/login', {
@@ -156,7 +222,11 @@ export function AppProvider({ children }) {
       if (!res.ok) throw new Error(data.error || 'Identifiants invalides');
 
       if (data.company && data.user) {
-        await loadCompanies(data.company._id, data.user._id);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('saas_active_company_id', data.company._id);
+          localStorage.setItem('saas_active_user_id', data.user._id);
+        }
+        await loadCompanies(data.company._id, data.user._id, false);
         return { success: true, user: data.user, company: data.company };
       }
       return { success: false, error: 'Réponse incomplète' };
@@ -165,7 +235,7 @@ export function AppProvider({ children }) {
     }
   }, [loadCompanies]);
 
-  // Inscription
+  // Inscription standard
   const register = useCallback(async (registerData) => {
     try {
       const res = await fetch('/api/auth/register', {
@@ -177,7 +247,11 @@ export function AppProvider({ children }) {
       if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'inscription');
 
       if (data.company && data.user) {
-        await loadCompanies(data.company._id, data.user._id);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('saas_active_company_id', data.company._id);
+          localStorage.setItem('saas_active_user_id', data.user._id);
+        }
+        await loadCompanies(data.company._id, data.user._id, false);
         return { success: true, user: data.user, company: data.company };
       }
       return { success: false, error: 'Réponse incomplète' };
@@ -189,17 +263,22 @@ export function AppProvider({ children }) {
   // Déconnexion
   const logout = useCallback(() => {
     setActiveUser(null);
+    setActiveCompany(null);
+    setIsDemoMode(false);
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('saas_demo_mode');
       localStorage.removeItem('saas_active_user_id');
+      localStorage.removeItem('saas_active_company_id');
+      localStorage.removeItem('saas_active_project_id');
     }
   }, []);
 
   // Rafraîchir les données de l'entreprise
   const refreshCompanyData = useCallback(async () => {
     if (activeCompany) {
-      await loadCompanyData(activeCompany._id, activeUser?._id);
+      await loadCompanyData(activeCompany._id, activeUser?._id, isDemoMode);
     }
-  }, [activeCompany, activeUser, loadCompanyData]);
+  }, [activeCompany, activeUser, loadCompanyData, isDemoMode]);
 
   useEffect(() => {
     loadCompanies();
@@ -212,6 +291,8 @@ export function AppProvider({ children }) {
     activeUser,
     companyProjects,
     activeProject,
+    isDemoMode,
+    isAuthenticated: Boolean(activeUser && activeCompany),
     loading,
     error,
     switchCompany,
@@ -220,6 +301,8 @@ export function AppProvider({ children }) {
     login,
     register,
     logout,
+    enableDemoMode,
+    exitDemoMode,
     refreshCompanyData,
     reloadCompanies: loadCompanies,
   }), [
@@ -229,6 +312,7 @@ export function AppProvider({ children }) {
     activeUser,
     companyProjects,
     activeProject,
+    isDemoMode,
     loading,
     error,
     switchCompany,
@@ -237,6 +321,8 @@ export function AppProvider({ children }) {
     login,
     register,
     logout,
+    enableDemoMode,
+    exitDemoMode,
     refreshCompanyData,
     loadCompanies,
   ]);

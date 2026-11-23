@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApp } from '@/components/Context';
 import UserModal from '@/components/UserModal';
 import {
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function UsersPage() {
+  const router = useRouter();
   const {
     activeCompany,
     companyUsers,
@@ -20,11 +22,19 @@ export default function UsersPage() {
     refreshCompanyData,
     activeUser,
     switchUser,
+    isAuthenticated,
+    isDemoMode,
     loading,
   } = useApp();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated && !isDemoMode) {
+      router.replace('/login');
+    }
+  }, [loading, isAuthenticated, isDemoMode, router]);
 
   const handleOpenCreateModal = () => {
     setSelectedUser(null);

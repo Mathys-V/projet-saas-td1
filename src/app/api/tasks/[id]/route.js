@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, toObjectId } from '@/lib/mongodb';
+import { logActivity } from '@/lib/activityLog';
 
 export const dynamic = 'force-dynamic';
 
@@ -132,6 +133,18 @@ export async function PUT(request, { params }) {
       { returnDocument: 'after' }
     );
 
+    if (body.status !== undefined && body.status !== existingTask.status) {
+      await logActivity({
+        companyId: existingTask.companyId,
+        userId: body.userId,
+        userName: body.userName || 'Collaborateur',
+        action: 'MOVE_TASK',
+        entityType: 'TASK',
+        entityId: existingTask._id,
+        details: `Tâche "${existingTask.title}" déplacée vers ${body.status}`,
+      });
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     console.error('Erreur PUT /api/tasks/[id]:', error);
@@ -158,11 +171,24 @@ export async function DELETE(request, { params }) {
     }
 
     const { db } = await getDatabase();
+    const taskToDelete = await db.collection('tasks').findOne({ _id: taskId, companyId });
+    if (!taskToDelete) {
+      return NextResponse.json({ error: 'Tâche introuvable dans cette entreprise' }, { status: 404 });
+    }
+
     const result = await db.collection('tasks').deleteOne({ _id: taskId, companyId });
 
     if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Tâche introuvable dans cette entreprise' }, { status: 404 });
     }
+
+    await logActivity({
+      companyId,
+      action: 'DELETE_TASK',
+      entityType: 'TASK',
+      entityId: taskId,
+      details: `Suppression définitive de la tâche "${taskToDelete.title}"`,
+    });
 
     return NextResponse.json({ success: true, message: 'Tâche supprimée avec succès' });
   } catch (error) {

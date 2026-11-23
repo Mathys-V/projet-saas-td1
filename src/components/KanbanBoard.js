@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import KanbanColumn from './KanbanColumn';
 import TaskModal from './TaskModal';
+import TimelineView from './TimelineView';
 import {
   Search,
   Plus,
@@ -10,6 +11,8 @@ import {
   SlidersHorizontal,
   X,
   AlertCircle,
+  LayoutGrid,
+  Calendar,
 } from 'lucide-react';
 
 const COLUMNS = [
@@ -51,6 +54,7 @@ export default function KanbanBoard({
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'timeline'
 
   // Filtres
   const [searchQuery, setSearchQuery] = useState('');
@@ -141,6 +145,8 @@ export default function KanbanBoard({
         body: JSON.stringify({
           companyId,
           status: newStatus,
+          userId: activeUser?._id,
+          userName: activeUser?.fullName || 'Collaborateur',
         }),
       });
 
@@ -165,11 +171,16 @@ export default function KanbanBoard({
   };
 
   const handleSaveTask = async (taskPayload) => {
+    const payloadWithUser = {
+      ...taskPayload,
+      userId: activeUser?._id,
+      userName: activeUser?.fullName || 'Collaborateur',
+    };
     if (activeTaskForModal?._id) {
       const res = await fetch(`/api/tasks/${activeTaskForModal._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskPayload),
+        body: JSON.stringify(payloadWithUser),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -181,7 +192,7 @@ export default function KanbanBoard({
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskPayload),
+        body: JSON.stringify(payloadWithUser),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -240,6 +251,16 @@ export default function KanbanBoard({
         <span>{error}</span>
       </div>
     );
+  } else if (viewMode === 'timeline') {
+    kanbanContent = (
+      <TimelineView
+        tasks={filteredTasks}
+        usersMap={usersMap}
+        onTaskClick={handleOpenEditModal}
+        onDragStart={handleDragStart}
+        onAddTaskClick={handleOpenCreateModal}
+      />
+    );
   } else {
     kanbanContent = (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
@@ -286,6 +307,34 @@ export default function KanbanBoard({
 
           {/* Boutons d'action rapides */}
           <div className="flex items-center space-x-2">
+            {/* Basculeur de vue Kanban / Timeline */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'kanban'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Affichage en colonnes Kanban"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Kanban</span>
+              </button>
+              <button
+                onClick={() => setViewMode('timeline')}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'timeline'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Affichage en calendrier / timeline d'échéances"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Échéances</span>
+              </button>
+            </div>
+
             {/* Bouton Mes tâches */}
             {activeUser && (
               <button

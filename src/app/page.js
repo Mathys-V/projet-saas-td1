@@ -2,13 +2,21 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useApp } from '@/components/Context';
 
 export default function HomePage() {
   const router = useRouter();
+  const { isAuthenticated, isDemoMode, loading } = useApp();
 
   useEffect(() => {
-    router.replace('/dashboard');
-  }, [router]);
+    if (!loading) {
+      if (isAuthenticated || isDemoMode) {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [isAuthenticated, isDemoMode, loading, router]);
 
   return (
     <div className="h-96 flex items-center justify-center text-slate-400">

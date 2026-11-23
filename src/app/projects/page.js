@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useApp } from '@/components/Context';
 import ProjectModal from '@/components/ProjectModal';
@@ -24,18 +25,27 @@ function getProjectStatusBadgeClass(status) {
 }
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const {
     activeCompany,
     companyUsers,
     companyProjects,
     refreshCompanyData,
     switchProject,
+    isAuthenticated,
+    isDemoMode,
     loading,
   } = useApp();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [tasksMap, setTasksMap] = useState({});
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated && !isDemoMode) {
+      router.replace('/login');
+    }
+  }, [loading, isAuthenticated, isDemoMode, router]);
 
   // Charger les stats de tâches pour chaque projet
   useEffect(() => {

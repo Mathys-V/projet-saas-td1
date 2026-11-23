@@ -31,6 +31,11 @@ async function ensureIndexes(db) {
       db.collection('projects').createIndex({ companyId: 1, createdAt: -1 }),
       db.collection('tasks').createIndex({ companyId: 1, projectId: 1, status: 1 }),
       db.collection('tasks').createIndex({ companyId: 1, assigneeId: 1 }),
+      // Index Text NoSQL pour recherche plein texte
+      db.collection('tasks').createIndex({ title: 'text', description: 'text', tags: 'text' }),
+      // Index pour les logs d'activité et index TTL d'expiration automatique (30 jours)
+      db.collection('activity_logs').createIndex({ companyId: 1, createdAt: -1 }),
+      db.collection('activity_logs').createIndex({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 3600 }),
     ]);
     indexesCreated = true;
   } catch (error) {

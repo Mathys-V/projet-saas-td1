@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, toObjectId } from '@/lib/mongodb';
 import { ensureSeedData } from '@/lib/seed';
+import { logActivity } from '@/lib/activityLog';
 import { ObjectId } from 'mongodb';
 
 export const dynamic = 'force-dynamic';
@@ -155,6 +156,17 @@ export async function POST(request) {
     };
 
     await db.collection('tasks').insertOne(newTask);
+
+    await logActivity({
+      companyId: validCompanyId,
+      userId: body.userId || assigneeCheck.validAssigneeId,
+      userName: body.userName || 'Collaborateur',
+      action: 'CREATE_TASK',
+      entityType: 'TASK',
+      entityId: newTask._id,
+      details: `Création de la tâche "${newTask.title}" (${taskPriority})`,
+    });
+
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
     console.error('Erreur POST /api/tasks:', error);

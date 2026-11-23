@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useApp } from '@/components/Context';
 import KanbanBoard from '@/components/KanbanBoard';
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function KanbanPage() {
+  const router = useRouter();
   const {
     activeCompany,
     companyUsers,
@@ -21,10 +23,18 @@ export default function KanbanPage() {
     switchProject,
     activeUser,
     refreshCompanyData,
+    isAuthenticated,
+    isDemoMode,
     loading,
   } = useApp();
 
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated && !isDemoMode) {
+      router.replace('/login');
+    }
+  }, [loading, isAuthenticated, isDemoMode, router]);
 
   const handleSaveProject = async (projectPayload) => {
     const res = await fetch('/api/projects', {
