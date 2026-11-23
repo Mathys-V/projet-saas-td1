@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, toObjectId } from '@/lib/mongodb';
-import { ensureSeedData } from '@/lib/seed';
 import { hashPassword } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
@@ -8,7 +7,6 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
-    await ensureSeedData();
     const body = await request.json();
     const { mode, companyName, industry, description, themeColor, fullName, email, password, jobTitle, companyId, role } = body;
 

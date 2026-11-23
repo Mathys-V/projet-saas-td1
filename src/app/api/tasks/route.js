@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, toObjectId } from '@/lib/mongodb';
-import { ensureSeedData } from '@/lib/seed';
 import { logActivity } from '@/lib/activityLog';
 import { ObjectId } from 'mongodb';
 
@@ -68,7 +67,6 @@ async function validateTaskAssignee(db, companyId, project, assigneeId) {
 
 export async function GET(request) {
   try {
-    await ensureSeedData();
     const { searchParams } = new URL(request.url);
     const companyIdParam = searchParams.get('companyId');
 
@@ -97,7 +95,6 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    await ensureSeedData();
     const body = await request.json();
     const { companyId, projectId, assigneeId, title, description, status, priority, order, dueDate, tags, subtasks } = body;
 

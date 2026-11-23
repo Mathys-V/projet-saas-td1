@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, toObjectId } from '@/lib/mongodb';
-import { ensureSeedData } from '@/lib/seed';
+import { verifyUserRole } from '@/lib/rbac';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request, { params }) {
   try {
-    await ensureSeedData();
     const companyId = toObjectId(params.id);
     if (!companyId) {
       return NextResponse.json({ error: 'Identifiant invalide' }, { status: 400 });
@@ -71,6 +70,11 @@ export async function DELETE(request, { params }) {
     const companyId = toObjectId(params.id);
     if (!companyId) {
       return NextResponse.json({ error: 'Identifiant invalide' }, { status: 400 });
+    }
+
+    const rbacCheck = await verifyUserRole(request, companyId, ['ADMIN']);
+    if (!rbacCheck.authorized) {
+      return NextResponse.json({ error: rbacCheck.error }, { status: rbacCheck.status });
     }
 
     const { db } = await getDatabase();

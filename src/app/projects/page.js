@@ -12,6 +12,7 @@ import {
   Edit2,
   Trash2,
   Building2,
+  Copy,
 } from 'lucide-react';
 
 function getProjectStatusBadgeClass(status) {
@@ -32,6 +33,7 @@ export default function ProjectsPage() {
     companyProjects,
     refreshCompanyData,
     switchProject,
+    activeUser,
     isAuthenticated,
     isDemoMode,
     loading,
@@ -118,11 +120,35 @@ export default function ProjectsPage() {
     try {
       const res = await fetch(`/api/projects/${projectId}?companyId=${activeCompany._id}`, {
         method: 'DELETE',
+        headers: { 'x-user-id': activeUser?._id || '' },
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Erreur suppression projet');
       }
+      await refreshCompanyData();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDuplicateProject = async (proj) => {
+    try {
+      const payload = {
+        companyId: activeCompany._id,
+        name: `${proj.name} (Copie)`,
+        description: proj.description || '',
+        status: 'ACTIVE',
+        memberIds: proj.memberIds || [],
+        startDate: new Date().toISOString(),
+        targetDate: proj.targetDate || null,
+      };
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Erreur duplication projet');
       await refreshCompanyData();
     } catch (err) {
       alert(err.message);
@@ -212,19 +238,28 @@ export default function ProjectsPage() {
                     {/* Actions Modifier / Supprimer */}
                     <div className="flex items-center space-x-1">
                       <button
+                        onClick={() => handleDuplicateProject(proj)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors"
+                        title="Dupliquer le projet"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                      <button
                         onClick={() => handleOpenEditModal(proj)}
                         className="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 transition-colors"
                         title="Modifier le projet"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteProject(proj._id)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
-                        title="Supprimer le projet (cascade)"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {activeUser?.role !== 'MEMBER' && (
+                        <button
+                          onClick={() => handleDeleteProject(proj._id)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
+                          title="Supprimer le projet (cascade)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
 

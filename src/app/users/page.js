@@ -83,6 +83,7 @@ export default function UsersPage() {
     try {
       const res = await fetch(`/api/users/${userId}?companyId=${activeCompany._id}`, {
         method: 'DELETE',
+        headers: { 'x-user-id': activeUser?._id || '' },
       });
       if (!res.ok) {
         const data = await res.json();
@@ -200,13 +201,15 @@ export default function UsersPage() {
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => handleDeleteUser(u._id)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
-                      title="Supprimer le collaborateur (désassignation auto)"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {activeUser?.role === 'ADMIN' && (
+                      <button
+                        onClick={() => handleDeleteUser(u._id)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
+                        title="Supprimer le collaborateur (désassignation auto)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

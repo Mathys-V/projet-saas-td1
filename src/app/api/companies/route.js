@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
-import { ensureSeedData } from '@/lib/seed';
 import { ObjectId } from 'mongodb';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    await ensureSeedData();
     const { db } = await getDatabase();
     const companies = await db.collection('companies').find({}).sort({ createdAt: -1 }).toArray();
     return NextResponse.json(companies);
@@ -19,7 +17,6 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    await ensureSeedData();
     const body = await request.json();
     const { name, industry, description, themeColor } = body;
 

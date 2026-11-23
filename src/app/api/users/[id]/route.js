@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, toObjectId } from '@/lib/mongodb';
 import { hashPassword } from '@/lib/auth';
+import { verifyUserRole } from '@/lib/rbac';
 
 export const dynamic = 'force-dynamic';
 
@@ -94,6 +95,11 @@ export async function DELETE(request, { params }) {
     const companyId = toObjectId(companyIdParam);
     if (!companyId) {
       return NextResponse.json({ error: 'companyId invalide' }, { status: 400 });
+    }
+
+    const rbacCheck = await verifyUserRole(request, companyId, ['ADMIN']);
+    if (!rbacCheck.authorized) {
+      return NextResponse.json({ error: rbacCheck.error }, { status: rbacCheck.status });
     }
 
     const { db } = await getDatabase();

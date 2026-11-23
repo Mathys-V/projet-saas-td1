@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import KanbanColumn from './KanbanColumn';
 import TaskModal from './TaskModal';
 import TimelineView from './TimelineView';
+import TaskTableView from './TaskTableView';
 import {
   Search,
   Plus,
@@ -13,6 +14,7 @@ import {
   AlertCircle,
   LayoutGrid,
   Calendar,
+  Table,
 } from 'lucide-react';
 
 const COLUMNS = [
@@ -207,12 +209,47 @@ export default function KanbanBoard({
     try {
       const res = await fetch(`/api/tasks/${taskId}?companyId=${companyId}`, {
         method: 'DELETE',
+        headers: { 'x-user-id': activeUser?._id || '' },
       });
-      if (res.ok) {
-        setTasks((prev) => prev.filter((t) => t._id !== taskId));
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erreur lors de la suppression');
       }
+      setTasks((prev) => prev.filter((t) => t._id !== taskId));
     } catch (err) {
-      alert('Erreur suppression : ' + err.message);
+      alert(err.message);
+    }
+  };
+
+  const handleDuplicateTask = async (task) => {
+    try {
+      const payload = {
+        companyId,
+        projectId,
+        assigneeId: task.assigneeId || null,
+        title: `${task.title} (Copie)`,
+        description: task.description || '',
+        status: task.status || 'TODO',
+        priority: task.priority || 'MEDIUM',
+        dueDate: task.dueDate || null,
+        tags: task.tags || [],
+        subtasks: (task.subtasks || []).map((s) => ({ title: s.title, completed: false })),
+        userId: activeUser?._id,
+        userName: activeUser?.fullName || 'Collaborateur',
+      };
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erreur duplication');
+      }
+      const created = await res.json();
+      setTasks((prev) => [...prev, created]);
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -261,6 +298,17 @@ export default function KanbanBoard({
         onAddTaskClick={handleOpenCreateModal}
       />
     );
+  } else if (viewMode === 'table') {
+    kanbanContent = (
+      <TaskTableView
+        tasks={filteredTasks}
+        usersMap={usersMap}
+        onTaskClick={handleOpenEditModal}
+        onDuplicateTask={handleDuplicateTask}
+        onDeleteTask={handleDeleteTask}
+        activeUser={activeUser}
+      />
+    );
   } else {
     kanbanContent = (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
@@ -307,7 +355,7 @@ export default function KanbanBoard({
 
           {/* Boutons d'action rapides */}
           <div className="flex items-center space-x-2">
-            {/* Basculeur de vue Kanban / Timeline */}
+            {/* Basculeur de vue Kanban / Timeline / Tableau */}
             <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
               <button
                 onClick={() => setViewMode('kanban')}
@@ -331,7 +379,19 @@ export default function KanbanBoard({
                 title="Affichage en calendrier / timeline d'échéances"
               >
                 <Calendar className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Échéances</span>
+                <span className="hidden sm:inline">Timeline</span>
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Affichage en tableau structuré"
+              >
+                <Table className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Tableau</span>
               </button>
             </div>
 
@@ -438,6 +498,7 @@ export default function KanbanBoard({
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveTask}
         onDelete={handleDeleteTask}
+        onDuplicate={handleDuplicateTask}
         onAddComment={handleAddComment}
         users={users}
         companyId={companyId}

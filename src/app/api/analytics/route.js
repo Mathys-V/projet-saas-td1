@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getDatabase, toObjectId } from '@/lib/mongodb';
-import { ensureSeedData } from '@/lib/seed';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +10,6 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request) {
   try {
-    await ensureSeedData();
     const { searchParams } = new URL(request.url);
     const companyIdParam = searchParams.get('companyId');
 

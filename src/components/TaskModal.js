@@ -10,6 +10,7 @@ import {
   Send,
   AlertCircle,
   Plus,
+  Copy,
 } from 'lucide-react';
 
 const STATUS_OPTIONS = [
@@ -32,6 +33,7 @@ export default function TaskModal({
   onClose,
   onSave,
   onDelete,
+  onDuplicate,
   onAddComment,
   users = [],
   companyId,
@@ -526,8 +528,23 @@ export default function TaskModal({
 
         {/* Footer Modal avec actions */}
         <div className="px-6 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-          <div>
-            {isEditing && (
+          <div className="flex items-center space-x-2">
+            {isEditing && onDuplicate && (
+              <button
+                type="button"
+                onClick={() => {
+                  void onDuplicate(task);
+                  onClose();
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-200 border border-slate-300 flex items-center space-x-1.5 transition-colors"
+                title="Créer une copie de cette tâche"
+              >
+                <Copy className="w-3.5 h-3.5 text-slate-500" />
+                <span>Dupliquer</span>
+              </button>
+            )}
+
+            {isEditing && activeUser?.role !== 'MEMBER' && (
               <button
                 type="button"
                 onClick={() => {

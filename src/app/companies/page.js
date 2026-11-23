@@ -20,6 +20,7 @@ export default function CompaniesPage() {
     activeCompany,
     switchCompany,
     reloadCompanies,
+    activeUser,
     isAuthenticated,
     isDemoMode,
     loading,
@@ -81,6 +82,7 @@ export default function CompaniesPage() {
     try {
       const res = await fetch(`/api/companies/${companyId}`, {
         method: 'DELETE',
+        headers: { 'x-user-id': activeUser?._id || '' },
       });
       if (!res.ok) {
         const data = await res.json();
@@ -166,13 +168,15 @@ export default function CompaniesPage() {
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => handleDeleteCompany(c._id)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
-                      title="Supprimer l'entreprise (Suppression en cascade RG-06)"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {activeUser?.role === 'ADMIN' && (
+                      <button
+                        onClick={() => handleDeleteCompany(c._id)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 transition-colors"
+                        title="Supprimer l'entreprise (Suppression en cascade RG-06)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

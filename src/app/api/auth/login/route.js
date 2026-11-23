@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
-import { ensureSeedData } from '@/lib/seed';
 import { verifyPassword } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
-    await ensureSeedData();
     const { email, password } = await request.json();
 
     if (!email) {

@@ -137,6 +137,13 @@ export function AppProvider({ children }) {
     }
     setIsDemoMode(true);
 
+    try {
+      // Garantit la présence des données de test si la base est vide
+      await fetch('/api/seed');
+    } catch (err) {
+      console.warn('Erreur initialisation seed démo:', err);
+    }
+
     if (demoEmail) {
       // Connexion directe avec un email démo
       const res = await fetch('/api/auth/login', {
